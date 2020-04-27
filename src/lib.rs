@@ -81,6 +81,28 @@ impl Permutation for AffinePermutation {
     }
 }
 
+/// a' = blowfish(key, a)
+pub struct BlowfishPermutation(crypto::blowfish::Blowfish);
+impl BlowfishPermutation {
+  pub fn new(key: u64) -> BlowfishPermutation {
+    BlowfishPermutation(crypto::blowfish::Blowfish::new(&key.to_le_bytes()))
+  }
+}
+impl Permutation for BlowfishPermutation {
+    fn apply(&self, input: u64) -> u64 {
+        use crypto::symmetriccipher::BlockEncryptor;
+        let mut buf = [0u8; 8];
+        self.0.encrypt_block(&input.to_le_bytes(), &mut buf);
+        u64::from_le_bytes(buf)
+    }
+    fn unapply(&self, output: u64) -> u64 {
+        use crypto::symmetriccipher::BlockDecryptor;
+        let mut buf = [0u8; 8];
+        self.0.decrypt_block(&output.to_le_bytes(), &mut buf);
+        u64::from_le_bytes(buf)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -122,7 +144,7 @@ mod test {
     }
 
     #[quickcheck]
-    fn affineinvertible(key: u64, input: u64) {
+    fn affine_invertible(key: u64, input: u64) {
         let scalar = 2 * key + 1;
         let offset = 42 * key + 19;
         let perm = AffinePermutation::new(scalar, offset);
@@ -132,6 +154,17 @@ mod test {
             "affine({}, {}) not invertible on {}",
             scalar,
             offset,
+            input
+        );
+    }
+    #[quickcheck]
+    fn blowfish_invertible(key: u64, input: u64) {
+        let perm = BlowfishPermutation::new(123_456_789);
+        assert_eq!(
+            perm.unapply(perm.apply(input)),
+            input,
+            "blowfish({}) not invertible on {}",
+            key,
             input
         );
     }
