@@ -7,6 +7,8 @@ trait Permutation {
     fn unapply(&self, ouptut: u64) -> u64;
 }
 
+pub mod prime;
+
 struct ShiftPermutation {
     amount: u64,
 }
