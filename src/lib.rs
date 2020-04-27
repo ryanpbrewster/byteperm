@@ -9,6 +9,7 @@ pub trait Permutation {
 
 mod prime;
 
+/// a' = a + x
 pub struct ShiftPermutation {
     amount: u64,
 }
@@ -21,6 +22,7 @@ impl Permutation for ShiftPermutation {
     }
 }
 
+/// a' = a ^ x
 pub struct XorPermutation {
     key: u64,
 }
@@ -33,6 +35,7 @@ impl Permutation for XorPermutation {
     }
 }
 
+/// a' = a * x
 pub struct MultiplicativePermutation {
   scalar: u64,
   inverse: u64,
@@ -54,6 +57,29 @@ impl Permutation for MultiplicativePermutation {
   }
 }
 
+/// a' = a * x + b
+pub struct AffinePermutation {
+  scalar: u64,
+  inverse: u64,
+  offset: u64,
+}
+impl AffinePermutation {
+  pub fn new(scalar: u64, offset: u64) -> AffinePermutation {
+    AffinePermutation {
+      scalar,
+      inverse: prime::multiplicative_inverse(scalar),
+      offset,
+    }
+  }
+}
+impl Permutation for AffinePermutation {
+  fn apply(&self, input: u64) -> u64 {
+    self.scalar.wrapping_mul(input).wrapping_add(self.offset)
+  }
+  fn unapply(&self, output: u64) -> u64 {
+    self.inverse.wrapping_mul(output.wrapping_sub(self.offset))
+  }
+}
 
 #[cfg(test)]
 mod test {
@@ -91,6 +117,20 @@ mod test {
             input,
             "mult({}) not invertible on {}",
             key,
+            input
+        );
+    }
+
+    #[quickcheck]
+    fn affineinvertible(key: u64, input: u64) {
+        let scalar = 2 * key + 1;
+        let offset = 42 * key + 19;
+        let perm = AffinePermutation::new(scalar, offset);
+        assert_eq!(
+            perm.unapply(perm.apply(input)),
+            input,
+            "affine({}, {}) not invertible on {}",
+            scalar, offset,
             input
         );
     }
@@ -135,5 +175,26 @@ mod test {
         let perm = MultiplicativePermutation::new(123_456_789);
         assert_eq!(perm.apply(0), 0);
         assert_eq!(perm.apply(1), 123_456_789);
+    }
+
+    #[test]
+    fn affine_zero() {
+        // AffinePermutation is better still. It doesn't do weird things at zero or one.
+        let perm = AffinePermutation::new(123_456_789, 417);
+        assert_eq!(perm.apply(0), 417);
+        assert_eq!(perm.apply(1), 123_456_789 + 417);
+    }
+    #[test]
+    fn affine_sequence() {
+        // AffinePermutation still leaks information if you can feed it sequential inputs.
+        let scalar = 18446744073709551557;
+        let perm = AffinePermutation::new(scalar, 417);
+
+        let x1 = perm.apply(42);
+        let x2 = perm.apply(43);
+        assert_eq!(x2.wrapping_sub(x1), scalar);
+
+        // Once you figure this out, you can predict the next output.
+        assert_eq!(perm.apply(44), x2.wrapping_add(scalar));
     }
 }
