@@ -37,48 +37,48 @@ impl Permutation for XorPermutation {
 
 /// a' = a * x
 pub struct MultiplicativePermutation {
-  scalar: u64,
-  inverse: u64,
+    scalar: u64,
+    inverse: u64,
 }
 impl MultiplicativePermutation {
-  pub fn new(scalar: u64) -> MultiplicativePermutation {
-    MultiplicativePermutation {
-      scalar,
-      inverse: prime::multiplicative_inverse(scalar),
+    pub fn new(scalar: u64) -> MultiplicativePermutation {
+        MultiplicativePermutation {
+            scalar,
+            inverse: prime::multiplicative_inverse(scalar),
+        }
     }
-  }
 }
 impl Permutation for MultiplicativePermutation {
-  fn apply(&self, input: u64) -> u64 {
-    self.scalar.wrapping_mul(input)
-  }
-  fn unapply(&self, output: u64) -> u64 {
-    self.inverse.wrapping_mul(output)
-  }
+    fn apply(&self, input: u64) -> u64 {
+        self.scalar.wrapping_mul(input)
+    }
+    fn unapply(&self, output: u64) -> u64 {
+        self.inverse.wrapping_mul(output)
+    }
 }
 
 /// a' = a * x + b
 pub struct AffinePermutation {
-  scalar: u64,
-  inverse: u64,
-  offset: u64,
+    scalar: u64,
+    inverse: u64,
+    offset: u64,
 }
 impl AffinePermutation {
-  pub fn new(scalar: u64, offset: u64) -> AffinePermutation {
-    AffinePermutation {
-      scalar,
-      inverse: prime::multiplicative_inverse(scalar),
-      offset,
+    pub fn new(scalar: u64, offset: u64) -> AffinePermutation {
+        AffinePermutation {
+            scalar,
+            inverse: prime::multiplicative_inverse(scalar),
+            offset,
+        }
     }
-  }
 }
 impl Permutation for AffinePermutation {
-  fn apply(&self, input: u64) -> u64 {
-    self.scalar.wrapping_mul(input).wrapping_add(self.offset)
-  }
-  fn unapply(&self, output: u64) -> u64 {
-    self.inverse.wrapping_mul(output.wrapping_sub(self.offset))
-  }
+    fn apply(&self, input: u64) -> u64 {
+        self.scalar.wrapping_mul(input).wrapping_add(self.offset)
+    }
+    fn unapply(&self, output: u64) -> u64 {
+        self.inverse.wrapping_mul(output.wrapping_sub(self.offset))
+    }
 }
 
 #[cfg(test)]
@@ -130,7 +130,8 @@ mod test {
             perm.unapply(perm.apply(input)),
             input,
             "affine({}, {}) not invertible on {}",
-            scalar, offset,
+            scalar,
+            offset,
             input
         );
     }
@@ -152,10 +153,7 @@ mod test {
     fn shift_sequence() {
         // ShiftPermutation kind of sucks, because adjacent inputs produce adjacent outputs.
         let perm = ShiftPermutation { amount: 12345 };
-        assert_eq!(
-            perm.apply(42) + 1,
-            perm.apply(43),
-        );
+        assert_eq!(perm.apply(42) + 1, perm.apply(43),);
     }
 
     #[test]
@@ -163,10 +161,7 @@ mod test {
         // XorPermutation is a bit better, but still not great.
         // Inputs that differ by a single bit will produce outputs that differ by a single bit.
         let perm = XorPermutation { key: 123_456_789 };
-        assert_eq!(
-            perm.apply(42),
-            perm.apply(43) ^ 1,
-        );
+        assert_eq!(perm.apply(42), perm.apply(43) ^ 1,);
     }
 
     #[test]
