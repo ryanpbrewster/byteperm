@@ -26,6 +26,11 @@ impl Permutation for ShiftPermutation {
 pub struct XorPermutation {
     key: u64,
 }
+impl XorPermutation {
+    pub fn new(key: u64) -> XorPermutation {
+        XorPermutation { key }
+    }
+}
 impl Permutation for XorPermutation {
     fn apply(&self, input: u64) -> u64 {
         input ^ self.key
@@ -84,9 +89,9 @@ impl Permutation for AffinePermutation {
 /// a' = blowfish(key, a)
 pub struct BlowfishPermutation(crypto::blowfish::Blowfish);
 impl BlowfishPermutation {
-  pub fn new(key: u64) -> BlowfishPermutation {
-    BlowfishPermutation(crypto::blowfish::Blowfish::new(&key.to_le_bytes()))
-  }
+    pub fn new(key: u64) -> BlowfishPermutation {
+        BlowfishPermutation(crypto::blowfish::Blowfish::new(&key.to_le_bytes()))
+    }
 }
 impl Permutation for BlowfishPermutation {
     fn apply(&self, input: u64) -> u64 {
